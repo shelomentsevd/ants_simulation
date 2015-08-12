@@ -10,9 +10,10 @@ var GVar = {
 //Common functions
 var Common = {
     key2xy: function (key) {
-        return key.split(',').map(function(item) {
+        var result = key.split(',').map(function(item) {
             return parseInt(item);
         });
+        return result;
     },
     xy2key: function (x, y) {
         return [x, y].join(',');
@@ -43,6 +44,7 @@ var ActorSpawn = function (x, y) {
     this._y = y;
     this._actors = [];
     this._draw();
+    this._createActor();
 };
 
 ActorSpawn.prototype._draw = function () {
@@ -50,8 +52,10 @@ ActorSpawn.prototype._draw = function () {
 };
 
 ActorSpawn.prototype._createActor = function () {
-    var cell = Game.map.getFreeWays(this._x, this._y)[0];
-    
+    var key    = Game.map.getFreeWays(this._x, this._y)[0];
+    var [x, y] = Common.key2xy(key);
+    var actor  = new Actor(x, y);
+    this._actors.push(actor);
 };
 
 //Map
@@ -95,7 +99,7 @@ Map.prototype._draw = function () {
 
 //If cell from x,y coordinate isn't wall return true
 Map.prototype._isVisible = function (x, y) {
-    var key = xy2key(x, y);
+    var key = Common.xy2key(x, y);
     return this._freeCells.indexOf(key) != -1;
 };
 
@@ -105,7 +109,7 @@ Map.prototype._calculateView = function (x, y, r) {
     var result = [];
     var viewCallback = function (x, y, r, visible) {
         if(visible) {
-            var key = xy2key(x, y);
+            var key = Common.xy2key(x, y);
             this.push(key);
             var tile = Game.map._cells[key];
             Game.display.draw(x, y, tile, '#ff0');
@@ -121,10 +125,17 @@ Map.prototype._calculateView = function (x, y, r) {
 Map.prototype.getFreeWays = function (x, y) {
     var visibleCells = this._calculateView(x, y, 1);
     var result = [];
-    for(var key in visibleCells) {
-      if(this._cells.indexOf(key) != -1)
+    for(var i = 0; i < visibleCells.length; i++) {
+      var key = visibleCells[i];
+      var [x, y] = Common.key2xy(key);
+      var visible = this._isVisible(x, y);
+      if(visible) {
+        
         result.push(key);
+      }
     }
+    
+    return result;
 };
 
 Map.prototype.getRandomEmptyCell = function () {
@@ -148,7 +159,7 @@ var Game = {
         this.options = this.display.getOptions();
         this.map = new Map(this.options.width, this.options.height);
         var [x, y] = this.map.getRandomEmptyCell();
-        var player = new Actor(x, y);
+        var player = new ActorSpawn(x, y);
     }
 }
 
