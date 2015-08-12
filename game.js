@@ -22,7 +22,7 @@ var Map = function (width, height) {
     this._width      = width;
     this._height     = height;
     this._tiles      = {}; //All tiles
-    this._emptyTiles = {}; //Tiles without actors and walls
+    this._emptyTiles = []; //Tiles without actors and walls
     this._generate();
     this._draw();
 };
