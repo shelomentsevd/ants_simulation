@@ -3,7 +3,20 @@
 var GVar = {
     wall: '#',
     space:'.',
-    actor:'@'
+    actor:'a',
+    spawn:'S'
+};
+
+//Common functions
+var Common = {
+    key2xy: function (key) {
+        return key.split(',').map(function(item) {
+            return parseInt(item);
+        });
+    },
+    xy2key: function (x, y) {
+        return [x, y].join(',');
+    }
 };
 
 //Actor
@@ -21,7 +34,24 @@ Actor.prototype._draw = function () {
 
 //Return's free cells in radius 1
 Actor.prototype._lookAround = function () {
-    Game.map.calculateView(this._x, this._y, 1);
+    //Game.map.calculateView(this._x, this._y, 1);
+};
+
+//Actor spawn
+var ActorSpawn = function (x, y) {
+    this._x = x;
+    this._y = y;
+    this._actors = [];
+    this._draw();
+};
+
+ActorSpawn.prototype._draw = function () {
+    Game.display.draw(this._x, this._y, GVar.spawn);
+};
+
+ActorSpawn.prototype._createActor = function () {
+    var cell = Game.map.getFreeWays(this._x, this._y)[0];
+    
 };
 
 //Map
@@ -38,7 +68,7 @@ var Map = function (width, height) {
 Map.prototype._generate = function () {
     //Map generation callback
     var mapCallback = function(x, y, isItWall) {
-        var key  = [x,y].join(',');
+        var key  = Common.xy2key(x, y);
         var tile;
         
         if (isItWall) {
@@ -58,29 +88,25 @@ Map.prototype._generate = function () {
 //Draw map
 Map.prototype._draw = function () {
     for(var key in this._cells) {
-        //Just for fun ^_^
-        var [x, y] = key.split(',').map(function(item) {
-            return parseInt(item);
-        });
-    Game.display.draw(x, y, this._cells[key]);
+        var [x, y] = Common.key2xy(key);
+        Game.display.draw(x, y, this._cells[key]);
     }
 };
 
-Map.prototype.calculateView = function (x, y, r) {
-    
-    var visibilityCallback  = function (x, y) {
-        var key = [x, y].join(',');
-        var visibility = this._freeCells.indexOf(key) != -1;
-        //console.log("Key: %s Visibility: %d", key, visibility);
-        return visibility;
-    };
-    
-    var fov = new ROT.FOV.DiscreteShadowcasting(visibilityCallback.bind(this));
+//If cell from x,y coordinate isn't wall return true
+Map.prototype._isVisible = function (x, y) {
+    var key = xy2key(x, y);
+    return this._freeCells.indexOf(key) != -1;
+};
+
+//
+Map.prototype._calculateView = function (x, y, r) {
+    var fov = new ROT.FOV.DiscreteShadowcasting(this._isVisible.bind(this));
     var result = [];
     var viewCallback = function (x, y, r, visible) {
         if(visible) {
-            var key = [x, y].join(',');
-            this.push();
+            var key = xy2key(x, y);
+            this.push(key);
             var tile = Game.map._cells[key];
             Game.display.draw(x, y, tile, '#ff0');
         }
@@ -91,12 +117,20 @@ Map.prototype.calculateView = function (x, y, r) {
     return result;
 };
 
+//Get cells for move
+Map.prototype.getFreeWays = function (x, y) {
+    var visibleCells = this._calculateView(x, y, 1);
+    var result = [];
+    for(var key in visibleCells) {
+      if(this._cells.indexOf(key) != -1)
+        result.push(key);
+    }
+};
+
 Map.prototype.getRandomEmptyCell = function () {
     var index = Math.floor(ROT.RNG.getUniform() * this._freeCells.length);
     var key = this._freeCells[index];
-    return key.split(',').map(function(item) {
-            return parseInt(item);
-    });
+    return Common.key2xy(key);
 };
 //Game
 var Game = {
