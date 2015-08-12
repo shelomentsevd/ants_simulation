@@ -1,4 +1,12 @@
 'use strict';
+//Game const
+var GVar = {
+    wall: '#',
+    space:'.',
+    actor:'@'
+};
+
+//Actor
 var Actor = function (x, y) {
     this._x = x;
     this._y = y;
@@ -6,13 +14,15 @@ var Actor = function (x, y) {
 };
 
 Actor.prototype._draw = function () {
-    Game.display.draw(this._x, this._y, "@", "#ff0");
+    Game.display.draw(this._x, this._y, GVar.actor, "#ff0");
 };
 
+//Map
 var Map = function (width, height) {
-    this._width  = width;
-    this._height = height;
-    this._tiles  = {};
+    this._width      = width;
+    this._height     = height;
+    this._tiles      = {}; //All tiles
+    this._emptyTiles = {}; //Tiles without actors and walls
     this._generate();
     this._draw();
 };
@@ -20,13 +30,20 @@ var Map = function (width, height) {
 //Generate map
 Map.prototype._generate = function () {
     //Map generation callback
-    var mapCallback = function(x, y, value) {
+    var mapCallback = function(x, y, isItWall) {
         var key  = [x,y].join(',');
-        var tile  = (value)?'#':'.';
+        var tile;
+        
+        if (isItWall) {
+            tile = GVar.wall;
+        } else {
+            tile = GVar.space;
+            this._emptyTiles.push(key);
+        }
         
         this._tiles[key] = tile;
     };
-    //genaration starts here
+    //generation starts here
     var arena = new ROT.Map.IceyMaze(this._width, this._height);
     arena.create(mapCallback.bind(this));
 };
@@ -41,14 +58,11 @@ Map.prototype._draw = function () {
     }
 };
 
+//Game
 var Game = {
     display: null,
     
-    options: {
-        //width:  60,
-        //height: 30,
-        //bg:     "#00E0F0"
-    },
+    options: {},
     
     init: function() {
         this.display = new ROT.Display(this.options);
