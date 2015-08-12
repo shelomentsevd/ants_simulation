@@ -70,7 +70,9 @@ Map.prototype.calculateView = function (x, y, r) {
     
     var visibilityCallback  = function (x, y) {
         var key = [x, y].join(',');
-        return this._freeCells.indexOf(key) != -1;
+        var visibility = this._freeCells.indexOf(key) != -1;
+        //console.log("Key: %s Visibility: %d", key, visibility);
+        return visibility;
     };
     
     var fov = new ROT.FOV.DiscreteShadowcasting(visibilityCallback.bind(this));
@@ -112,7 +114,6 @@ var Game = {
         this.options = this.display.getOptions();
         this.map = new Map(this.options.width, this.options.height);
         var [x, y] = this.map.getRandomEmptyCell();
-        console.log("X: %d Y: %d", x, y);
         var player = new Actor(x, y);
     }
 }
