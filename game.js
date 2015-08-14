@@ -2,7 +2,7 @@
 //Game const
 var GVar = {
     //ms between two actions
-    timeout: 1000,
+    timeout: 100,
     wall: '#',
     space:'.',
     actor:'a',
@@ -27,7 +27,6 @@ var Actor = function (x, y) {
     this._x = x;
     this._y = y;
     this._draw();
-    this._lookAround();
     //Delete x,y cell from freeCells
 };
 
@@ -35,7 +34,14 @@ Actor.prototype._draw = function () {
     Game.display.draw(this._x, this._y, GVar.actor, "#ff0");
 };
 //Actor action
-Actor.prototype.act = function () {};
+Actor.prototype.act = function () {
+    var freeWays = Game.map.getFreeWays(this._x, this._y);
+    var cell     = ROT.RNG.getUniformInt(1,freeWays.length);
+    var [x, y] = Common.key2xy(freeWays[cell-1]);
+    this._x = x;
+    this._y = y;
+    this._draw();
+};
 //Return's free cells in radius 1
 Actor.prototype._lookAround = function () {
     //Game.map.calculateView(this._x, this._y, 1);
@@ -65,10 +71,11 @@ ActorSpawn.prototype._createActor = function () {
 ActorSpawn.prototype.act = function () {
     Game.engine.lock();
     function wrap() {
-        console.log("Hello world");
+        Game.map._draw();
+        this._actors[0].act();
         Game.engine.unlock();
     };
-    setTimeout(wrap, GVar.timeout);
+    setTimeout(wrap.bind(this), GVar.timeout);
 };
 
 //Map
@@ -167,9 +174,7 @@ var Game = {
     engine:   null,
     
     map: null,
-    
-    actors: [],
-    
+        
     init: function () {
         this.display = new ROT.Display(this.options);
         document.body.appendChild(this.display.getContainer());
