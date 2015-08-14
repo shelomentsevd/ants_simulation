@@ -1,6 +1,8 @@
 'use strict';
 //Game const
 var GVar = {
+    //ms between two actions
+    timeout: 1000,
     wall: '#',
     space:'.',
     actor:'a',
@@ -32,7 +34,8 @@ var Actor = function (x, y) {
 Actor.prototype._draw = function () {
     Game.display.draw(this._x, this._y, GVar.actor, "#ff0");
 };
-
+//Actor action
+Actor.prototype.act = function () {};
 //Return's free cells in radius 1
 Actor.prototype._lookAround = function () {
     //Game.map.calculateView(this._x, this._y, 1);
@@ -48,14 +51,24 @@ var ActorSpawn = function (x, y) {
 };
 
 ActorSpawn.prototype._draw = function () {
+    this.freeWays = Game.map.getFreeWays(this._x, this._y);
     Game.display.draw(this._x, this._y, GVar.spawn);
 };
 
 ActorSpawn.prototype._createActor = function () {
-    var key    = Game.map.getFreeWays(this._x, this._y)[0];
+    var key    = this.freeWays[1];
     var [x, y] = Common.key2xy(key);
     var actor  = new Actor(x, y);
     this._actors.push(actor);
+};
+//Main Actors life cycle
+ActorSpawn.prototype.act = function () {
+    Game.engine.lock();
+    function wrap() {
+        console.log("Hello world");
+        Game.engine.unlock();
+    };
+    setTimeout(wrap, GVar.timeout);
 };
 
 //Map
@@ -125,6 +138,7 @@ Map.prototype._calculateView = function (x, y, r) {
 Map.prototype.getFreeWays = function (x, y) {
     var visibleCells = this._calculateView(x, y, 1);
     var result = [];
+    
     for(var i = 0; i < visibleCells.length; i++) {
       var key = visibleCells[i];
       var [x, y] = Common.key2xy(key);
@@ -149,17 +163,28 @@ var Game = {
     
     options: {},
     
+    scheduler: null,
+    engine:   null,
+    
     map: null,
     
     actors: [],
     
-    init: function() {
+    init: function () {
         this.display = new ROT.Display(this.options);
         document.body.appendChild(this.display.getContainer());
+        //Get current option
         this.options = this.display.getOptions();
+        //Map initialization
         this.map = new Map(this.options.width, this.options.height);
+        //Actor's initialization
         var [x, y] = this.map.getRandomEmptyCell();
         var player = new ActorSpawn(x, y);
+        //Game loop initialization
+        this.scheduler = new ROT.Scheduler.Simple();
+        this.scheduler.add(player, true);
+        this.engine   = new ROT.Engine(this.scheduler);
+        this.engine.start();
     }
 }
 
